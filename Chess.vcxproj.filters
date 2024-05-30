@@ -22,4 +22,8 @@
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <Font Include="arial.ttf" />
+    <Font Include="ariblk.ttf" />
+  </ItemGroup>
 </Project>
