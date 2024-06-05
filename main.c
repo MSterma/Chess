@@ -10,7 +10,7 @@
 #define b 20
 enum pieces { P = 1, N, B, R, Q, K };
 
-int board[8][8] = {
+/*int board[8][8] = {
     {b + R,b + N,b + B,b + Q,b + K,b + B,b + N,b + R},
     {b + P,b + P,b + P,b + P,b + P,b + P,b + P,b + P},
     {0,0,0,0,0,0,0,0},
@@ -19,6 +19,16 @@ int board[8][8] = {
     {0,0,0,0,0,0,0,0},
     {w + P,w + P,w + P,w + P,w + P,w + P,w + P,w + P},
     {w + R,w + N,w + B,w + Q,w + K,w + B,w + N,w + R},
+};*/
+int board[8][8] = {
+    {0,0,0,0,0,0,0,0},
+    {0,0,0,0,0,0,0,0},
+    {0,0,0,0,0,0,0,0},
+    {0,0,0,0,0,0,0,0},
+    {0,0,0,0,0,0,0,0},
+    {0,0,0,0,0,0,0,0},
+    {0,0,0,0,0,0,0,0},
+    {b+Q,0,0,0,0,0,0,w + Q},
 };
 bool pawn_move(int from_row, int from_col,int to_row,int to_col) {
     int delta_row = to_row - from_row;
@@ -80,17 +90,12 @@ bool rook_move(int from_row, int from_col, int to_row, int to_col) {
     int color = board[from_row][from_col] / 10; // 0 - empty, 1 - white, 2 - black
     int target_color = board[to_row][to_col] / 10;
     int min_row, min_col;
-    if (from_row < to_row) {
-        min_row = from_row;
-        min_col = from_col;
-    }
-    else {
-        min_row = to_row;
-        min_col = to_col;
-    }
+    min_row = (from_row < to_row) ? from_row : to_row;
+    min_col = (from_col < to_col) ? from_col : to_col;
     if (delta_row==0 && delta_col==0 || color==target_color) return false;
     if (delta_row == 0) {
         for (int i = 1; i < ((delta_col > 0) ? delta_col : delta_col * (-1)); i++) {
+            printf("%d ", min_col + i);
             if (board[min_row][min_col + i] != 0) return false;
         }
     }
@@ -108,7 +113,10 @@ bool queen_move(int from_row, int from_col, int to_row, int to_col) {
     int color = board[from_row][from_col] / 10; // 0 - empty, 1 - white, 2 - black
     int target_color = board[to_row][to_col] / 10;
     int min_row, min_col, count;
-    if (from_row < to_row) {
+    if (delta_row == 0 || delta_col == 0) {
+        min_row = (from_row < to_row) ? from_row : to_row;
+        min_col = (from_col < to_col) ? from_col : to_col;
+    } else if (from_row < to_row) {
         min_row = from_row;
         min_col = from_col;
     }
