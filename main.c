@@ -572,7 +572,13 @@ int main() {
             al_draw_textf(font, al_map_rgb(255, 255, 255), 0, 2 * tile_size / 2, 0, "Position: %s", pos);
             al_draw_textf(font, al_map_rgb(255, 255, 255), 0, 3 * tile_size / 2, 0, "From: %d %d", from_row, from_col);
             al_draw_textf(font, al_map_rgb(255, 255, 255), 0, 4 * tile_size / 2, 0, "To: %d %d", to_row, to_col);
-            al_draw_textf(font, al_map_rgb(255, 255, 255), 0, 5 * tile_size / 2, 0, "Turn: %c", (turn % 2) ? 'B' : 'W');
+            if (!(turn % 2)) {
+                al_draw_scaled_bitmap(wK.bitmap, 0, 0, 200, 200, 5 * tile_size / 2, desktop_height / 2-100, tile_size, tile_size, 0);
+            }
+            else {
+                al_draw_scaled_bitmap(bK.bitmap, 0, 0, 200, 200, 5 * tile_size / 2, desktop_height / 2-100, tile_size, tile_size, 0);
+
+            }
             al_draw_textf(font, al_map_rgb(255, 255, 255), 0, 6 * tile_size / 2, 0, "Pause: %c", (game_state % 2) ? 'N' : 'Y');
 
             //draw corners
