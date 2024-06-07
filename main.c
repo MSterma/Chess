@@ -12,7 +12,7 @@
 enum pieces { P = 1, N, B, R, Q, K };
 
 typedef struct piece {
-    int code;
+    int code;// first digit  0-empty 1-white 2-black, second digit piece type
     ALLEGRO_BITMAP* bitmap;
     bool (*can_move)(int, int, int, int);
 } piece ;
@@ -195,21 +195,6 @@ int main() {
 
     
     al_init_image_addon();
-    /*ALLEGRO_BITMAP* bitmaps[12];
-    bitmaps[0] = al_load_bitmap("graphics/pawn_white.png");
-    bitmaps[1] = al_load_bitmap("graphics/knight_white.png");
-    bitmaps[2] = al_load_bitmap("graphics/bishop_white.png");
-    bitmaps[3] = al_load_bitmap("graphics/rook_white.png");
-    bitmaps[4] = al_load_bitmap("graphics/queen_white.png");
-    bitmaps[5] = al_load_bitmap("graphics/king_white.png");
-    bitmaps[6] = al_load_bitmap("graphics/pawn_black.png");
-    bitmaps[7] = al_load_bitmap("graphics/knight_black.png");
-    bitmaps[8] = al_load_bitmap("graphics/bishop_black.png");
-    bitmaps[9] = al_load_bitmap("graphics/rook_black.png");
-    bitmaps[10] = al_load_bitmap("graphics/queen_black.png");
-    bitmaps[11] = al_load_bitmap("graphics/king_black.png");
-    for (int i = 0; i < 12; i++) must_init(bitmaps[i], "bitmap");*/
-
     //al_set_new_display_flags(ALLEGRO_FULLSCREEN_WINDOW);
     ALLEGRO_DISPLAY* disp = al_create_display(desktop_width, desktop_height);
     must_init(disp, "display");
@@ -249,11 +234,6 @@ int main() {
     int turn = 0;
     int game_state = 0;
 
-    /*piece wP; // white pawn
-    wP.code = w + P;
-    wP.bitmap = al_load_bitmap("graphics/pawn_white.png");
-    wP.can_move = pawn_move;
-    must_init(wP.bitmap, "bitmap");*/
     piece wP = *new_piece(w + P, al_load_bitmap("graphics/pawn_white.png"), pawn_move);
     piece bP = *new_piece(b + P, al_load_bitmap("graphics/pawn_black.png"), pawn_move);
     
@@ -271,82 +251,6 @@ int main() {
 
     piece wK = *new_piece(w + K, al_load_bitmap("graphics/king_white.png"), king_move);
     piece bK = *new_piece(b + K, al_load_bitmap("graphics/king_black.png"), king_move);
-    /*piece bP; // black pawn
-    bP.code = b + P;
-    bP.bitmap = al_load_bitmap("graphics/pawn_black.png");
-    bP.can_move = pawn_move;
-    must_init(bP.bitmap, "bitmap");
-
-    piece wN; // white knight
-    wN.code = w + N;
-    wN.bitmap = al_load_bitmap("graphics/knight_white.png");
-    wN.can_move = knight_move;
-    must_init(wN.bitmap, "bitmap");
-
-    piece bN; // black knight
-    bN.code = b + N;
-    bN.bitmap = al_load_bitmap("graphics/knight_black.png");
-    bN.can_move = knight_move;
-    must_init(bN.bitmap, "bitmap");
-
-    piece wB; // white bishop
-    wB.code = w + B;
-    wB.bitmap = al_load_bitmap("graphics/bishop_white.png");
-    wB.can_move = bishop_move;
-    must_init(wB.bitmap, "bitmap");
-
-    piece bB; // black bishop
-    bB.code = b + B;
-    bB.bitmap = al_load_bitmap("graphics/bishop_black.png");
-    bB.can_move = bishop_move;
-    must_init(bB.bitmap, "bitmap");
-
-    piece wR; // white rook
-    wR.code = w + R;
-    wR.bitmap = al_load_bitmap("graphics/rook_white.png");
-    wR.can_move = rook_move;
-    must_init(wR.bitmap, "bitmap");
-
-    piece bR; // black rook
-    bR.code = b + R;
-    bR.bitmap = al_load_bitmap("graphics/rook_black.png");
-    bR.can_move = rook_move;
-    must_init(bR.bitmap, "bitmap");
-
-    piece wQ; // white queen
-    wQ.code = w + Q;
-    wQ.bitmap = al_load_bitmap("graphics/queen_white.png");
-    wQ.can_move = queen_move;
-    must_init(wQ.bitmap, "bitmap");
-
-    piece bQ; // black queen
-    bQ.code = b + Q;
-    bQ.bitmap = al_load_bitmap("graphics/queen_black.png");
-    bQ.can_move = queen_move;
-    must_init(bQ.bitmap, "bitmap");
-
-    piece wK; // white king
-    wK.code = w + K;
-    wK.bitmap = al_load_bitmap("graphics/king_white.png");
-    wK.can_move = king_move;
-    must_init(wK.bitmap, "bitmap");
-
-    piece bK; // black king
-    bK.code = b + K;
-    bK.bitmap = al_load_bitmap("graphics/king_black.png");
-    bK.can_move = king_move;
-    must_init(bK.bitmap, "bitmap");*/
-
-    /*int board[8][8] = {
-        {bR.code,bN.code,bB.code,bQ.code,bK.code,bB.code,bN.code,bR.code},
-        {bP.code,bP.code,bP.code,bP.code,bP.code,bP.code,bP.code,bP.code},
-        {0,0,0,0,0,0,0,0},
-        {0,0,0,0,0,0,0,0},
-        {0,0,0,0,0,0,0,0},
-        {0,0,0,0,0,0,0,0},
-        {wP.code,wP.code,wP.code,wP.code,wP.code,wP.code,wP.code,wP.code},
-        {wR.code,wN.code,wB.code,wQ.code,wK.code,wB.code,wN.code,wR.code}
-    };*/
 
     //put pieces on board
     for (int i = 0; i < 8; i++) {
@@ -366,10 +270,13 @@ int main() {
     board[7][3] = wQ.code;
     board[7][4] = wK.code;
 
-    piece code_to_piece[2][8] = { //[piece color][piece type]
+    piece code_to_piece[2][6] = { //[piece color][piece type]
         {wP,wN,wB,wR,wQ,wK},
         {bP,bN,bB,bR,bQ,bK}
     };
+    int sep = 0;
+    piece captured[30];
+    int last_captured = 0;
     
     while (1) {
         al_wait_for_event(queue, &event);
@@ -475,18 +382,19 @@ int main() {
             al_draw_filled_rectangle(desktop_width - 2 * tile_size, 0, desktop_width, tile_size, al_map_rgb(0, 0, 0));
             al_draw_textf(font, al_map_rgb(255, 255, 255), desktop_width - 9 * tile_size / 5, tile_size / 8, 0, "MENU");
 
-            //move
+            //move 
             int row = (pos_y - y_offset) / tile_size - 1;
             int col = (pos_x - x_offset) / tile_size - 1;
             if (game_state % 2 == 1) {
                 int temp = 0;
-                
+                    // check if first click on board
                 if (row >= 0 && row < 8 && col >= 0 && col < 8 && first_click && (board[row][col] == 0 || ((board[row][col] / 10) - 1) != turn % 2)) {
                     first_click = false;
                     click_counter = 0;
                     from_row = -1;
                     from_col = -1;
                 }
+                // check if second click on board
                 if ((first_click || second_click) && (row < 0 || row >= 8 || col < 0 || col >= 8)) {
                     first_click = false;
                     second_click = false;
@@ -496,52 +404,33 @@ int main() {
                     to_row = -1;
                     to_col = -1;
                 }
+                //set sourxe tile clicked on
                 if (first_click) {
                     from_row = row;
                     from_col = col;
                     click_counter += 1;
                     first_click = false;
                 }
+                //set destination tile clicked on
                 if (second_click) {
                     to_row = row;
                     to_col = col;
                     second_click = false;
                     click_counter = 0;
                 }
+                //check if legal move
                 if (from_col != -1 && from_row != -1 && to_col != -1 && to_row != -1) {
                     bool flag = false;
                     piece p = code_to_piece[board[from_row][from_col] / 10 - 1][board[from_row][from_col] % 10 - 1]; // [piece color][piece type]
                     flag = p.can_move(from_row, from_col, to_row, to_col);
-                    //flag = pawn_move(from_row, from_col, to_row, to_col);
-                    /*switch (board[from_row][from_col]) {
-                        case w+P:
-                        case b+P:
-                            flag = pawn_move(from_row, from_col, to_row, to_col, board);
-                            break;
-                        case w+N:
-                        case b+N:
-                            flag = knight_move(from_row, from_col, to_row, to_col);
-                            break;
-                        case w+B:
-                        case b+B:
-                            flag = bishop_move(from_row, from_col, to_row, to_col);
-                            break;
-                        case w+R:
-                        case b+R:
-                            flag = rook_move(from_row, from_col, to_row, to_col);
-                            break;
-                        case w+Q:
-                        case b+Q:
-                            flag = queen_move(from_row, from_col, to_row, to_col);
-                            break;
-                        case w+K:
-                        case b+K:
-                            flag = king_move(from_row, from_col, to_row, to_col);
-                            break;
-                    }*/
                     if (flag) {
                         temp = board[from_row][from_col];
                         board[from_row][from_col] = 0;
+                        if (board[to_row][to_col]) {
+                            piece p = code_to_piece[board[to_row][to_col] / 10 - 1][board[to_row][to_col] % 10 - 1];
+                            captured[last_captured] = p;
+                            last_captured++;
+                        }
                         board[to_row][to_col] = temp;
                         from_col = -1;
                         from_row = -1;
@@ -580,6 +469,18 @@ int main() {
 
             }
             al_draw_textf(font, al_map_rgb(255, 255, 255), 0, 6 * tile_size / 2, 0, "Pause: %c", (game_state % 2) ? 'N' : 'Y');
+            int black_sep = 2;
+            int white_sep = 2;
+            for (int i = 0; i < last_captured; i++) {
+                if(captured[i].code/10==1){ 
+                    al_draw_scaled_bitmap(captured[i].bitmap, 0, 0, 200, 200, desktop_width - (tile_size * white_sep++) / 2,tile_size*3, tile_size/2, tile_size/2, 0);
+                    
+                }
+                else {
+                    al_draw_scaled_bitmap(captured[i].bitmap, 0, 0, 200, 200, desktop_width - (tile_size * black_sep++) / 2, desktop_height-tile_size*3, tile_size/2, tile_size/2, 0);
+                }
+               
+            }
 
             //draw corners
             al_draw_filled_rectangle(x, y, x + tile_size, y + tile_size, tile_color);
@@ -624,10 +525,7 @@ int main() {
                     if (row == from_row && col == from_col)
                         al_draw_filled_rectangle(x, y, x + tile_size, y + tile_size, al_map_rgb(0, 255, 0));
                     //draw piece
-                    /*int piece_color = board[row][col] / 10;
-                    int piece = board[row][col] % 10;
-                    int bitmap_address = piece - 1 + 6 * (piece_color-1);
-                    if (piece) al_draw_scaled_bitmap(bitmaps[bitmap_address], 0, 0, 200, 200, x, y, tile_size, tile_size, 0);*/
+            
                     if (board[row][col]) {
                         piece p = code_to_piece[board[row][col] / 10 - 1][board[row][col] % 10 - 1]; // [piece color][piece type]
                         al_draw_scaled_bitmap(p.bitmap, 0, 0, 200, 200, x, y, tile_size, tile_size, 0);
@@ -655,19 +553,11 @@ int main() {
                 y += tile_size;
 
             }
-
-            //ALLEGRO_BITMAP* test = al_load_bitmap("graphics/king_black.png");
-            //must_init(test, "test");
-            //al_draw_scaled_bitmap(wP.bitmap, 0, 0, 200, 200, x_offset, y_offset, tile_size, tile_size, 0);
-            //al_draw_scaled_bitmap(test, 0, 0, 200, 200, x_offset, y_offset, tile_size, tile_size, 0);
-
-
             al_flip_display();
 
             redraw = false;
         }
     }
-    //for (int i = 0; i < 12; i++) al_destroy_bitmap(bitmaps[i]);
     for (int i = 0; i < 2; i++) for (int j = 0; j < 6; j++) al_destroy_bitmap(code_to_piece[i][j].bitmap);
     al_destroy_font(font);
     al_destroy_display(disp);
