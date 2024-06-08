@@ -174,7 +174,52 @@ bool king_move(int from_row, int from_col, int to_row, int to_col) {
     if (delta_row == 0 && delta_col == 0 || color == target_color) return false;
     return delta_row >= -1 && delta_row <= 1 && delta_col >= -1 && delta_col <= 1;
 }
+bool is_check(int kPos,int turn) {
+    if (!(turn % 2)) {
+        int krow = kPos / 10;
+        int kcol = kPos % 10;
+        //check for rook or queen's rook movement
+        for (int i = 1; kcol + i < 8; i++) {
+            if (board[krow][kcol + i] / 10 == 1) {
+                break;
+            }
+            if (board[krow][kcol + i] == b*R || board[krow][kcol + i] == b*Q) {
+               return true;
+                break;
+            }
+        }
+        for (int i = 1; kcol - i >= 0; i++) {
+            if (board[krow][kcol - i] / 10 == 1) {
+                break;
+            }
+            if (board[krow][kcol - i] == b*R|| board[krow][kcol - i] == b*Q) {
+                return  true;
+                break;
+            }
+        }
 
+        for (int i = 1; krow + i < 8; i++) {
+            if (board[krow + i][kcol] / 10 == 1) {
+                break;
+            }
+            if (board[krow + i][kcol] == b*R || board[krow + i][kcol] == b*Q) {
+                 return true;
+                break;
+            }
+        }
+        for (int i = 1; krow - i >= 0; i++) {
+            if (board[krow - i][kcol] / 10 == 1) {
+                break;
+            }
+            if (board[krow - i][kcol] == b*R || board[krow - i][kcol] == b*Q) {
+                return true;
+                break;
+            }
+        }
+        return false;
+    }
+    return false;
+}
 
 int main() {
     must_init(al_init(), "allegro");
@@ -269,7 +314,8 @@ int main() {
     board[7][2] = board[7][5] = wB.code;
     board[7][3] = wQ.code;
     board[7][4] = wK.code;
-
+    int wkPos = 74;
+    int bkPos = 04;
     piece code_to_piece[2][6] = { //[piece color][piece type]
         {wP,wN,wB,wR,wQ,wK},
         {bP,bN,bB,bR,bQ,bK}
@@ -277,7 +323,6 @@ int main() {
     int sep = 0;
     piece captured[30];
     int last_captured = 0;
-    
     while (1) {
         al_wait_for_event(queue, &event);
 
@@ -419,18 +464,23 @@ int main() {
                     click_counter = 0;
                 }
                 //check if legal move
+                bool check = is_check(wkPos,turn);
+              
+
                 if (from_col != -1 && from_row != -1 && to_col != -1 && to_row != -1) {
                     bool flag = false;
                     piece p = code_to_piece[board[from_row][from_col] / 10 - 1][board[from_row][from_col] % 10 - 1]; // [piece color][piece type]
                     flag = p.can_move(from_row, from_col, to_row, to_col);
-                    if (flag) {
+                    if (flag && !check) {
                         temp = board[from_row][from_col];
                         board[from_row][from_col] = 0;
-                        if (board[to_row][to_col]) {
-                            piece p = code_to_piece[board[to_row][to_col] / 10 - 1][board[to_row][to_col] % 10 - 1];
+                        piece p = code_to_piece[board[to_row][to_col] / 10 - 1][board[to_row][to_col] % 10 - 1];
+                      if(board[to_row][to_col]){
                             captured[last_captured] = p;
                             last_captured++;
                         }
+         
+           
                         board[to_row][to_col] = temp;
                         from_col = -1;
                         from_row = -1;
@@ -534,7 +584,6 @@ int main() {
                 x = x_offset;
                 color_flag += 1;
             }
-
             //draw menu
             y = y_offset+3*tile_size;
             x = x_offset+3*tile_size;
