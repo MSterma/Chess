@@ -522,6 +522,13 @@ int main() {
                         fprintf(f, "%d;", turn % 2);
                         fprintf(f, "%c;", wkPos + ' ');
                         fprintf(f, "%c;", bkPos + ' ');
+                        printf("\n\n\n\n\n\n%c\n\n\n\n",castling[0] + '@');
+                        fprintf(f, "%c;", castling[0] + '@');
+                        fprintf(f, "%c;", castling[1] + '@');
+                        fprintf(f, "%c;", castling[2] + '@');
+                        fprintf(f, "%c;", castling[3] + '@');
+                        fprintf(f, "%c;", castling[4] + '@');
+                        fprintf(f, "%c;", castling[5] + '@');
                         for (int i = 0; i < 8; i++) {
                             for (int j = 0; j < 8; j++) {
                                 fprintf(f, "%c;", board[i][j] + '@');
@@ -541,6 +548,10 @@ int main() {
                         wkPos = fgetc(f) - ' ';
                         fgetc(f);
                         bkPos = fgetc(f) - ' ';
+                        for (int i = 0; i < 6; i++) {
+                            fgetc(f);
+                            castling[i] = fgetc(f) - '@';
+                        }
                         char c = fgetc(f);
                         int row = 0;
                         int col = 0;
