@@ -10,6 +10,8 @@
 #define b 20
 
 enum pieces { P = 1, N, B, R, Q, K };
+bool castling[6] = { false,false,false,false, false, false }; //0- wk 1- first wk rook 2- second white rook 3-bk 4-1st black rook 5-2nd black rook
+
 
 typedef struct piece {
     int code;// first digit  0-empty 1-white 2-black, second digit piece type
@@ -173,14 +175,6 @@ bool queen_move(int from_row, int from_col, int to_row, int to_col) {
     else return false;
     return true;
 }
-bool king_move(int from_row, int from_col, int to_row, int to_col) {
-    int delta_row = to_row - from_row;
-    int delta_col = to_col - from_col;
-    int color = board[from_row][from_col] / 10; // 0 - empty, 1 - white, 2 - black
-    int target_color = board[to_row][to_col] / 10;
-    if (delta_row == 0 && delta_col == 0 || color == target_color) return false;
-    return delta_row >= -1 && delta_row <= 1 && delta_col >= -1 && delta_col <= 1;
-}
 bool is_check(int king_pos, int turn) {
     int king_color = turn + 1;
     //printf("KROL %d %d\n", king_color, king_pos);
@@ -197,6 +191,74 @@ bool is_check(int king_pos, int turn) {
         }
     }
     return false;
+}
+bool king_move(int from_row, int from_col, int to_row, int to_col) {
+    int delta_row = to_row - from_row;
+    int delta_col = to_col - from_col;
+    int color = board[from_row][from_col] / 10; // 0 - empty, 1 - white, 2 - black
+    int target_color = board[to_row][to_col] / 10;
+    if (delta_row == 0 && delta_col == 0 || color == target_color) return false;
+    if (delta_col==-2){
+        if (color == 1) {
+            if (castling[0] == false && castling[1] == false) {
+                for (int i = 0; i < 3; i++) {
+                    if (is_check(74 - i, 0)) {
+                        return false;
+                    }
+                    if (board[7][4 - i-1] ) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        }
+        else if (color==2){
+            if (castling[3] == false && castling[4] == false) {
+                for (int i = 0; i < 3; i++) {
+                    if (is_check(04 - i, 1)) {
+                        return false;
+                    }
+                    if (board[0][4 - i-1]) {
+                        return false;
+                    }
+                }
+                return true;
+
+            }
+        }
+
+    }else if (delta_col == 2) {
+        if (color == 1) {
+            if (castling[0] == false && castling[2] == false) {
+                for (int i = 0; i < 3; i++) {
+                    if (is_check(74 + i, 0)) {
+                        return false;
+                    }
+                    if (board[7][4 + i]!=0 && i!=0) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        }
+        else {
+            if (castling[3] == false && castling[5] == false) {
+                for (int i = 0; i < 3; i++) {
+                    if (is_check(04 +i, 1)) {
+                        return false;
+                    }
+                    if (board[0][4 + i] && i) {
+                        return false;
+                    }
+                }
+                return true;
+
+            }
+        }
+
+        
+    }
+    return delta_row >= -1 && delta_row <= 1 && delta_col >= -1 && delta_col <= 1;
 }
 bool check_after_move(int from_row, int from_col, int to_row, int to_col) {
     int temp1 = board[from_row][from_col];
@@ -510,7 +572,7 @@ int main() {
             al_clear_to_color(al_map_rgb(0, 0, 0));
             al_draw_filled_rectangle(0, 0, desktop_width, desktop_height, al_map_rgb(128, 128, 128));
             al_draw_textf(font, al_map_rgb(255, 255, 255), 0, 0, 0, "X: %d", pos_x);
-            al_draw_textf(font, al_map_rgb(255, 255, 255), 0, tile_size / 2, 0, "Y: %d", pos_y);
+            al_draw_textf(font, al_map_rgb(255, 255, 255), 0, tile_size / 2, 0, "kps: %d", wkPos);
             al_draw_filled_rectangle(desktop_width - 2 * tile_size, 0, desktop_width, tile_size, al_map_rgb(0, 0, 0));
             al_draw_textf(font, al_map_rgb(255, 255, 255), desktop_width - 9 * tile_size / 5, tile_size / 8, 0, "MENU");
 
@@ -601,8 +663,62 @@ int main() {
                             bkPos = to_row * 10 + to_col;
                         }
                         piece p = code_to_piece[board[to_row][to_col] / 10 - 1][board[to_row][to_col] % 10 - 1];
+                        temp = board[from_row][from_col];
+                        if (temp == wR.code) {
+                            if (to_col == 0) {
+                                castling[1] = true;
+                            }
+                            else {
+                                castling[2] = true;
+
+                            }
+
+                        }
+                        if (temp == bR.code) {
+                            if (to_col == 0) {
+                                castling[1] = true;
+                            }
+                            else {
+                                castling[2] = true;
+                            }
+                        }
+
+                        if (temp == wK.code) {
+                            if (from_col - to_col == -2) {
+                                board[from_row][from_col + 1] = board[7][7];
+                                board[7][7] = 0;
+                                castling[1] = true;
+                                castling[2] = true;
+                                wkPos = 76;
+                            }
+                            if (from_col - to_col == 2) {
+                                board[from_row][from_col - 1] = board[7][0];
+                                board[7][0] = 0;;
+                                castling[1] = true;
+                                castling[2] = true;
+                                wkPos = 72;
+                            }
+                            castling[0] = true;
+                        }
+                        if (temp == bK.code) {
+                            if (from_col - to_col == -2) {
+                                board[from_row][from_col + 1] = board[0][7];
+                                board[0][7] = 0;
+                                castling[3] = true;
+                                castling[4] = true;
+                                bkPos =  (from_col -2);
+
+                            }
+                            if (from_col - to_col == 2) {
+                                board[from_row][from_col - 1] = board[0][0];
+                                board[0][0] = 0;
+                                castling[4] = true;
+                                castling[3] = true;
+                                bkPos =   (from_col + 2);
+                            }
+                            castling[3] = true;
+                        }
                         if (p.code % 10 != 6) {
-                            temp = board[from_row][from_col];
                             board[from_row][from_col] = 0;
                             if (board[to_row][to_col]) {
                                 captured[last_captured] = p;
