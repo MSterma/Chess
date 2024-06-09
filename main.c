@@ -59,11 +59,11 @@ bool pawn_move(int from_row, int from_col,int to_row,int to_col) {
     int target_color = board[to_row][to_col] / 10;
     bool start_position = color && from_row == 6 || from_row == 1;
     if (color == 2) {
-        return ((delta_row == 1 || (start_position && delta_row == 2)) && delta_col == 0 && target_color == 0)
+        return ((delta_row == 1 || (start_position && delta_row == 2 && board[to_row-1][to_col]==0)) && delta_col == 0 && target_color == 0)
             || (delta_row == 1 && (delta_col == -1 || delta_col == 1) && target_color == 1);
     }
     else if (color == 1) {
-        return ((delta_row == -1 || (start_position && delta_row == -2)) && delta_col == 0 && target_color == 0)
+        return ((delta_row == -1 || (start_position && delta_row == -2 && board[to_row+1][to_col]==0)) && delta_col == 0 && target_color == 0)
             || (delta_row == -1 && (delta_col == -1 || delta_col == 1) && target_color == 2);
     }
     else return false;
@@ -229,7 +229,6 @@ bool is_check(int king_pos,int turn,bool flag) {
         for (int col = 0; col < 8; col++) {
             int code = board[row][col];
             if (code/10 && code/10 != king_color) {
-                if (flag) printf("FAULT!!!!!:%d %d\n", king_color,board[row][col]);
                 piece p = code_to_piece[code / 10 - 1][code % 10 - 1];     
                 if (p.can_move(row, col, king_pos / 10, king_pos % 10)) {
                     
@@ -240,18 +239,72 @@ bool is_check(int king_pos,int turn,bool flag) {
     }
     return false;
 }
+bool check_after_move(int from_row,int from_col,int to_row,int to_col) {
+    int temp1 = board[from_row][from_col];
+    int temp2 = board[to_row][to_col];
+    int temp3 = wkPos;
+    int temp4 = bkPos;
+
+    int turn = temp1 / 10;
+    int piece_code = temp1;
+    piece p = code_to_piece[temp1 / 10 - 1][temp1 % 10 - 1];
+    if (p.code == w + K) {
+        wkPos = to_row * 10 + to_col;
+    }
+    else if (p.code == b + K) {
+        bkPos = to_row * 10 + to_col;
+    }
+    board[from_row][from_col] = 0;
+    board[to_row][to_col] = temp1;
+    bool check = (turn % 2 - 1) ? is_check(bkPos, turn % 2, 1) : is_check(wkPos, turn % 2 + 1, 1);
+    //printf("CHECK AFTER %d MOVE %d\n",temp1, check);
+    board[from_row][from_col] = temp1;
+    board[to_row][to_col] = temp2;
+    wkPos = temp3;
+    bkPos = temp4;
+    return check;
+}
+bool can_any_move(int color) {
+    for (int from_row = 0; from_row < 8; from_row++) {
+        for (int from_col = 0; from_col < 8; from_col++) {
+            for (int to_row = 0; to_row < 8; to_row++) {
+                for (int to_col = 0; to_col < 8; to_col++) {
+                    int code = board[from_row][from_col];
+                    piece p = code_to_piece[code / 10 - 1][code % 10 - 1];
+                    if (code / 10 == color+1 && code % 10 == 6 && p.can_move(from_row, from_col, to_row, to_col)) {
+                        if (!is_check(10 * to_row + to_col, color, 0)) {
+                            //printf("KING CAN MOVE %d\n", 10 * to_row + to_col);
+                            return true;
+                        }
+                    }
+                    if (code / 10 == color+1 && p.can_move(from_row, from_col, to_row, to_col)) {
+                        if (check_after_move(from_row, from_col, to_row, to_col)) return false;
+                        //printf("SOMETHING CAN MOVE FROM %d TO %d\n", 10 * from_row + from_col, 10 * to_row + to_col);
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+    return false;
+}
 bool is_stalemate(int king_pos,int turn) {
     if (is_check(king_pos, turn,0)) return false;
+    int king_code = board[king_pos / 10][king_pos % 10];
+    piece king = code_to_piece[king_code / 10 - 1][king_code % 10 - 1];
     for (int i = -1; i <= 1; i++) {
-        for (int j = -1; j <= 1; i++) {
+        for (int j = -1; j <= 1; j++) {
             int temp = king_pos + 10 * i + j;
             if (!(i==0 && j==0) && temp / 10 >= 0 && temp / 10 <= 70 && temp % 10 >= 0 && temp % 10 <= 7) {
-                bool check = is_check(king_pos, turn,0);
-                if (!check) return false;
+                bool king_can_move = king.can_move(king_pos / 10, king_pos % 10, temp / 10, temp % 10);
+                bool check = is_check(temp, turn,0);
+                //printf("King %d temp %d %d %d\n", king_code, temp, check, king_can_move);
+                if (!check && king_can_move) return false;
             }
                 
         }
     }
+    //printf("KING CANT MOVE\n");
     return true;
 }
 int main() {
@@ -309,9 +362,10 @@ int main() {
     int click_counter = 0;
     int pos_x = 0, pos_y = 0;
     int from_row = -1, from_col = -1, to_row = -1, to_col = -1;
-    int turn = 0;
+    int turn = 0; // %2==0 - white, %2==1 black
     int game_state = 0; // 0 - paused, 1 - ongoing, 2 - finished
-
+    bool stalemate = false;
+    bool any_move = true;
     piece wP = *new_piece(w + P, al_load_bitmap("graphics/pawn_white.png"), pawn_move);
     piece bP = *new_piece(b + P, al_load_bitmap("graphics/pawn_black.png"), pawn_move);
     
@@ -348,10 +402,6 @@ int main() {
     board[7][3] = wQ.code;
     board[7][4] = wK.code;
 
-    /*/piece code_to_piece[2][6] = { //[piece color][piece type]
-        {wP,wN,wB,wR,wQ,wK},
-        {bP,bN,bB,bR,bQ,bK}
-    };*/
     code_to_piece[0][0] = wP;
     code_to_piece[0][1] = wN;
     code_to_piece[0][2] = wB;
@@ -406,16 +456,26 @@ int main() {
             
             if (menu_click) {
                 menu_click = false;
-                game_state += 1;
-                game_state %= 2;
+                //game_state += 1;
+                //game_state %= 2;
+                if (game_state == 1) game_state = 0;
+                else if (game_state == 2) game_state = 0;
+                else if (game_state == 0 && !stalemate) game_state = 1;
+                else if (game_state == 0 && stalemate) game_state = 2;
+                
             }
             //menu handling
-            if (game_state == 0) {
+            if (game_state != 1) {
                 if (pos_x > x_offset + 3 * tile_size && pos_x < x_offset + 7 * tile_size) {
                     //resume
                     if (pos_y >= y_offset + 3 * tile_size && pos_y < y_offset + 4 * tile_size && in_menu_click) {
-                        game_state += 1;
-                        game_state %= 2;
+                        //game_state += 1;
+                        //game_state %= 2;
+                        if (game_state == 1) game_state = 0;
+                        else if (game_state == 2) game_state = 0;
+                        else if (game_state == 0 && !stalemate) game_state = 1;
+                        else if (game_state == 0 && stalemate) game_state = 2;
+                        
                     }
                     //save
                     if (pos_y >= y_offset + 4 * tile_size && pos_y < y_offset + 5 * tile_size && in_menu_click) {
@@ -425,6 +485,8 @@ int main() {
                             return 1;
                         }
                         fprintf(f, "%d;", turn % 2);
+                        fprintf(f, "%c;", wkPos+' ');
+                        fprintf(f, "%c;", bkPos+' ');
                         for (int i = 0; i < 8; i++) {
                             for (int j = 0; j < 8; j++) {
                                 fprintf(f, "%c;", board[i][j] + '@');
@@ -440,6 +502,10 @@ int main() {
                             return 1;
                         }
                         turn = fgetc(f);
+                        fgetc(f);
+                        wkPos = fgetc(f)-' ';
+                        fgetc(f);
+                        bkPos = fgetc(f)-' ';
                         char c=fgetc(f);
                         int row = 0;
                         int col = 0;
@@ -479,8 +545,12 @@ int main() {
             int row = (pos_y - y_offset) / tile_size - 1;
             int col = (pos_x - x_offset) / tile_size - 1;
 
-            bool stalemate = is_stalemate(bkPos, turn) && is_stalemate(wkPos, turn);
-            if (stalemate) game_state = 2;
+            if (game_state == 1) {
+                stalemate = is_stalemate(bkPos, turn) || is_stalemate(wkPos, turn);
+                any_move = can_any_move(turn % 2);
+                if (stalemate && !any_move) game_state = 2;
+                stalemate &= (!any_move);
+            }
             if (game_state == 1) {
                 int temp = 0;
                     // check if first click on board
@@ -522,32 +592,20 @@ int main() {
                     bool flag = false;
                     piece p = code_to_piece[board[from_row][from_col] / 10 - 1][board[from_row][from_col] % 10 - 1]; // [piece color][piece type]
                     flag = p.can_move(from_row, from_col, to_row, to_col);
-                    //printf("%d :: %d %d %d %d\n", p.code,from_row, from_col, to_row, to_col);
                     if (flag) { // is king  checked after curr move?
                         int temp1 = board[from_row][from_col];
                         int temp2 = board[to_row][to_col];
                         int temp3 = wkPos;
                         int temp4 = bkPos;
-                        //printf("1WK: %d, BK: %d\n", wkPos, bkPos);
-                        printf("SIMULATION\n");
                         if (p.code == w + K) {
                             wkPos = to_row * 10 + to_col;
                         }
                         else if (p.code == b + K) {
-                            //printf("DZIALA");
                             bkPos = to_row * 10 + to_col;
                         }
                         board[from_row][from_col] = 0;
                         board[to_row][to_col] = temp1;
-                        //printf("2WK: %d, BK: %d\n", wkPos, bkPos);
-                        for (int i = 0; i < 8; i++) {
-                            for (int j = 0; j < 8; j++) {
-                                printf("%d ", board[i][j]);
-                            }
-                            printf("\n");
-                        }
                         check=(turn % 2) ? is_check(bkPos, turn % 2,1) : is_check(wkPos, turn % 2 + 1,1);
-                        printf("CAN BE SAVED %d %d\n", check,bkPos);
                         board[from_row][from_col] = temp1;
                         board[to_row][to_col] = temp2;
                         wkPos = temp3;
@@ -601,7 +659,15 @@ int main() {
             al_draw_textf(font, al_map_rgb(255, 255, 255), 0, 2 * tile_size / 2, 0, "Position: %s", pos);
             al_draw_textf(font, al_map_rgb(255, 255, 255), 0, 3 * tile_size / 2, 0, "From: %d %d", from_row, from_col);
             al_draw_textf(font, al_map_rgb(255, 255, 255), 0, 4 * tile_size / 2, 0, "To: %d %d", to_row, to_col);
-            al_draw_textf(font, al_map_rgb(255, 255, 255), 0, 5 * tile_size / 2, 0, "Game: %s", (game_state==2)?"End":"On ");
+            //printf("STILL  !!  %d\n", game_state);
+            al_draw_textf(font, al_map_rgb(255, 255, 255), 0, 5 * tile_size / 2, 0, "Game: %s", (game_state==2 || stalemate)?"End":"On ");
+            char won[4] = "   ";
+            if (stalemate) {
+                won[0] = '1';
+                won[1] = '/';
+                won[2] = '2';
+            }
+            al_draw_textf(font, al_map_rgb(255, 255, 255), 0, 6 * tile_size / 2, 0, "Won?: %s", won);
             if (!(turn % 2)) {
                 al_draw_scaled_bitmap(wK.bitmap, 0, 0, 200, 200, 5 * tile_size / 2, desktop_height / 2-100, tile_size, tile_size, 0);
             }
@@ -609,7 +675,7 @@ int main() {
                 al_draw_scaled_bitmap(bK.bitmap, 0, 0, 200, 200, 5 * tile_size / 2, desktop_height / 2-100, tile_size, tile_size, 0);
 
             }
-            al_draw_textf(font, al_map_rgb(255, 255, 255), 0, 6 * tile_size / 2, 0, "Pause: %c", (game_state % 2) ? 'N' : 'Y');
+            al_draw_textf(font, al_map_rgb(255, 255, 255), 0, 7 * tile_size / 2, 0, "Pause: %c", (game_state == 0) ? 'Y' : 'N');
             int black_sep = 2;
             int white_sep = 2;
             for (int i = 0; i < last_captured; i++) {
