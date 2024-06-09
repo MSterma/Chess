@@ -27,6 +27,12 @@ int board[8][8] = {
     {0,0,0,0,0,0,0,0},
     {0,0,0,0,0,0,0,0}
 };
+
+piece code_to_piece[2][6];
+
+int wkPos = 74;
+int bkPos = 04;
+
 void must_init(bool test, const char* description) {
     if (test) return;
     printf("couldn't initialize %s\n", description);
@@ -36,7 +42,7 @@ piece* new_piece(int code, ALLEGRO_BITMAP* bitmap,bool (*can_move)(int, int, int
     piece* p=malloc(sizeof(piece));
     if (p == NULL) {
         printf("new piece");
-        return 1;
+        exit(1);
     }
     p->code = code;
     p->bitmap = bitmap;
@@ -174,8 +180,8 @@ bool king_move(int from_row, int from_col, int to_row, int to_col) {
     if (delta_row == 0 && delta_col == 0 || color == target_color) return false;
     return delta_row >= -1 && delta_row <= 1 && delta_col >= -1 && delta_col <= 1;
 }
-bool is_check(int kPos,int turn) {
-    if (!(turn % 2)) {
+bool is_check(int king_pos,int turn,bool flag) {
+    /*if (!(turn % 2)) {
         int krow = kPos / 10;
         int kcol = kPos % 10;
         //check for rook or queen's rook movement
@@ -183,7 +189,7 @@ bool is_check(int kPos,int turn) {
             if (board[krow][kcol + i] / 10 == 1) {
                 break;
             }
-            if (board[krow][kcol + i] == b*R || board[krow][kcol + i] == b*Q) {
+            if (board[krow][kcol + i] == b+R || board[krow][kcol + i] == b+Q) {
                return true;
                 break;
             }
@@ -192,7 +198,7 @@ bool is_check(int kPos,int turn) {
             if (board[krow][kcol - i] / 10 == 1) {
                 break;
             }
-            if (board[krow][kcol - i] == b*R|| board[krow][kcol - i] == b*Q) {
+            if (board[krow][kcol - i] == b+R|| board[krow][kcol - i] == b+Q) {
                 return  true;
                 break;
             }
@@ -202,7 +208,7 @@ bool is_check(int kPos,int turn) {
             if (board[krow + i][kcol] / 10 == 1) {
                 break;
             }
-            if (board[krow + i][kcol] == b*R || board[krow + i][kcol] == b*Q) {
+            if (board[krow + i][kcol] == b+R || board[krow + i][kcol] == b+Q) {
                  return true;
                 break;
             }
@@ -211,16 +217,43 @@ bool is_check(int kPos,int turn) {
             if (board[krow - i][kcol] / 10 == 1) {
                 break;
             }
-            if (board[krow - i][kcol] == b*R || board[krow - i][kcol] == b*Q) {
+            if (board[krow - i][kcol] == b+R || board[krow - i][kcol] == b+Q) {
                 return true;
                 break;
             }
         }
         return false;
+    }*/
+    int king_color = board[king_pos / 10][king_pos % 10]/10;
+    for (int row = 0; row < 8; row++) {
+        for (int col = 0; col < 8; col++) {
+            int code = board[row][col];
+            if (code/10 && code/10 != king_color) {
+                if (flag) printf("FAULT!!!!!:%d %d\n", king_color,board[row][col]);
+                piece p = code_to_piece[code / 10 - 1][code % 10 - 1];     
+                if (p.can_move(row, col, king_pos / 10, king_pos % 10)) {
+                    
+                    return true;
+                }
+            }
+        }
     }
     return false;
 }
-
+bool is_stalemate(int king_pos,int turn) {
+    if (is_check(king_pos, turn,0)) return false;
+    for (int i = -1; i <= 1; i++) {
+        for (int j = -1; j <= 1; i++) {
+            int temp = king_pos + 10 * i + j;
+            if (!(i==0 && j==0) && temp / 10 >= 0 && temp / 10 <= 70 && temp % 10 >= 0 && temp % 10 <= 7) {
+                bool check = is_check(king_pos, turn,0);
+                if (!check) return false;
+            }
+                
+        }
+    }
+    return true;
+}
 int main() {
     must_init(al_init(), "allegro");
     must_init(al_install_keyboard(), "keyboard");
@@ -277,7 +310,7 @@ int main() {
     int pos_x = 0, pos_y = 0;
     int from_row = -1, from_col = -1, to_row = -1, to_col = -1;
     int turn = 0;
-    int game_state = 0;
+    int game_state = 0; // 0 - paused, 1 - ongoing, 2 - finished
 
     piece wP = *new_piece(w + P, al_load_bitmap("graphics/pawn_white.png"), pawn_move);
     piece bP = *new_piece(b + P, al_load_bitmap("graphics/pawn_black.png"), pawn_move);
@@ -314,12 +347,25 @@ int main() {
     board[7][2] = board[7][5] = wB.code;
     board[7][3] = wQ.code;
     board[7][4] = wK.code;
-    int wkPos = 74;
-    int bkPos = 04;
-    piece code_to_piece[2][6] = { //[piece color][piece type]
+
+    /*/piece code_to_piece[2][6] = { //[piece color][piece type]
         {wP,wN,wB,wR,wQ,wK},
         {bP,bN,bB,bR,bQ,bK}
-    };
+    };*/
+    code_to_piece[0][0] = wP;
+    code_to_piece[0][1] = wN;
+    code_to_piece[0][2] = wB;
+    code_to_piece[0][3] = wR;
+    code_to_piece[0][4] = wQ;
+    code_to_piece[0][5] = wK;
+
+    code_to_piece[1][0] = bP;
+    code_to_piece[1][1] = bN;
+    code_to_piece[1][2] = bB;
+    code_to_piece[1][3] = bR;
+    code_to_piece[1][4] = bQ;
+    code_to_piece[1][5] = bK;
+    
     int sep = 0;
     piece captured[30];
     int last_captured = 0;
@@ -338,13 +384,13 @@ int main() {
                 if (pos_y >= 0 && pos_y <= tile_size && pos_x >= desktop_width - 2 * tile_size && pos_x <= desktop_width) {
                     menu_click = true;
                 }
-                if (game_state%2==0 && pos_x > x_offset + 3 * tile_size && pos_x < x_offset + 7 * tile_size && pos_y >= y_offset + 3 * tile_size && pos_y < y_offset + 7 * tile_size) {
+                if (game_state==0 && pos_x > x_offset + 3 * tile_size && pos_x < x_offset + 7 * tile_size && pos_y >= y_offset + 3 * tile_size && pos_y < y_offset + 7 * tile_size) {
                     in_menu_click = true;
                 }
-                if (game_state%2==1 && click_counter == 0) {
+                if (game_state==1 && click_counter == 0) {
                     first_click = true;
                 }
-                if (game_state % 2 == 1 && click_counter == 1) {
+                if (game_state== 1 && click_counter == 1) {
                     second_click = true;
                 }
                 break;
@@ -361,13 +407,15 @@ int main() {
             if (menu_click) {
                 menu_click = false;
                 game_state += 1;
+                game_state %= 2;
             }
             //menu handling
-            if (game_state % 2 == 0) {
+            if (game_state == 0) {
                 if (pos_x > x_offset + 3 * tile_size && pos_x < x_offset + 7 * tile_size) {
                     //resume
                     if (pos_y >= y_offset + 3 * tile_size && pos_y < y_offset + 4 * tile_size && in_menu_click) {
                         game_state += 1;
+                        game_state %= 2;
                     }
                     //save
                     if (pos_y >= y_offset + 4 * tile_size && pos_y < y_offset + 5 * tile_size && in_menu_click) {
@@ -430,7 +478,10 @@ int main() {
             //move 
             int row = (pos_y - y_offset) / tile_size - 1;
             int col = (pos_x - x_offset) / tile_size - 1;
-            if (game_state % 2 == 1) {
+
+            bool stalemate = is_stalemate(bkPos, turn) && is_stalemate(wkPos, turn);
+            if (stalemate) game_state = 2;
+            if (game_state == 1) {
                 int temp = 0;
                     // check if first click on board
                 if (row >= 0 && row < 8 && col >= 0 && col < 8 && first_click && (board[row][col] == 0 || ((board[row][col] / 10) - 1) != turn % 2)) {
@@ -464,24 +515,63 @@ int main() {
                     click_counter = 0;
                 }
                 //check if legal move
-                bool check = is_check(wkPos,turn);
-              
-
+                bool check = (turn % 2) ? is_check(bkPos, turn % 2,0) : is_check(wkPos, turn % 2 + 1,0);
+                
+                
                 if (from_col != -1 && from_row != -1 && to_col != -1 && to_row != -1) {
                     bool flag = false;
                     piece p = code_to_piece[board[from_row][from_col] / 10 - 1][board[from_row][from_col] % 10 - 1]; // [piece color][piece type]
                     flag = p.can_move(from_row, from_col, to_row, to_col);
-                    if (flag && !check) {
-                        temp = board[from_row][from_col];
-                        board[from_row][from_col] = 0;
-                        piece p = code_to_piece[board[to_row][to_col] / 10 - 1][board[to_row][to_col] % 10 - 1];
-                      if(board[to_row][to_col]){
-                            captured[last_captured] = p;
-                            last_captured++;
+                    //printf("%d :: %d %d %d %d\n", p.code,from_row, from_col, to_row, to_col);
+                    if (flag) { // is king  checked after curr move?
+                        int temp1 = board[from_row][from_col];
+                        int temp2 = board[to_row][to_col];
+                        int temp3 = wkPos;
+                        int temp4 = bkPos;
+                        //printf("1WK: %d, BK: %d\n", wkPos, bkPos);
+                        printf("SIMULATION\n");
+                        if (p.code == w + K) {
+                            wkPos = to_row * 10 + to_col;
                         }
-         
-           
-                        board[to_row][to_col] = temp;
+                        else if (p.code == b + K) {
+                            //printf("DZIALA");
+                            bkPos = to_row * 10 + to_col;
+                        }
+                        board[from_row][from_col] = 0;
+                        board[to_row][to_col] = temp1;
+                        //printf("2WK: %d, BK: %d\n", wkPos, bkPos);
+                        for (int i = 0; i < 8; i++) {
+                            for (int j = 0; j < 8; j++) {
+                                printf("%d ", board[i][j]);
+                            }
+                            printf("\n");
+                        }
+                        check=(turn % 2) ? is_check(bkPos, turn % 2,1) : is_check(wkPos, turn % 2 + 1,1);
+                        printf("CAN BE SAVED %d %d\n", check,bkPos);
+                        board[from_row][from_col] = temp1;
+                        board[to_row][to_col] = temp2;
+                        wkPos = temp3;
+                        bkPos = temp4;
+                    }
+
+                    if (flag && !check) {
+                        
+                        if (p.code == w + K) {
+                            wkPos = to_row * 10 + to_col;
+                        }
+                        else if (p.code == b + K) {
+                            bkPos = to_row * 10 + to_col;
+                        }
+                        piece p = code_to_piece[board[to_row][to_col] / 10 - 1][board[to_row][to_col] % 10 - 1];
+                        if (p.code % 10 != 6) {
+                            temp = board[from_row][from_col];
+                            board[from_row][from_col] = 0;
+                            if (board[to_row][to_col]) {
+                                captured[last_captured] = p;
+                                last_captured++;
+                            }
+                            board[to_row][to_col] = temp;
+                        }
                         from_col = -1;
                         from_row = -1;
                         to_row = -1;
@@ -511,6 +601,7 @@ int main() {
             al_draw_textf(font, al_map_rgb(255, 255, 255), 0, 2 * tile_size / 2, 0, "Position: %s", pos);
             al_draw_textf(font, al_map_rgb(255, 255, 255), 0, 3 * tile_size / 2, 0, "From: %d %d", from_row, from_col);
             al_draw_textf(font, al_map_rgb(255, 255, 255), 0, 4 * tile_size / 2, 0, "To: %d %d", to_row, to_col);
+            al_draw_textf(font, al_map_rgb(255, 255, 255), 0, 5 * tile_size / 2, 0, "Game: %s", (game_state==2)?"End":"On ");
             if (!(turn % 2)) {
                 al_draw_scaled_bitmap(wK.bitmap, 0, 0, 200, 200, 5 * tile_size / 2, desktop_height / 2-100, tile_size, tile_size, 0);
             }
@@ -587,7 +678,7 @@ int main() {
             //draw menu
             y = y_offset+3*tile_size;
             x = x_offset+3*tile_size;
-            if (game_state % 2 == 0) {
+            if (game_state == 0) {
                 al_draw_filled_rectangle(x, y, x+4*tile_size, y+tile_size, al_map_rgb(0, 0, 0));
                 al_draw_textf(font, al_map_rgb(255, 255, 255), x, y + tile_size / 8, 0, "RESUME");
                 y += tile_size;
