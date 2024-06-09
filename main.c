@@ -180,58 +180,16 @@ bool king_move(int from_row, int from_col, int to_row, int to_col) {
     if (delta_row == 0 && delta_col == 0 || color == target_color) return false;
     return delta_row >= -1 && delta_row <= 1 && delta_col >= -1 && delta_col <= 1;
 }
-bool is_check(int king_pos,int turn,bool flag) {
-    /*if (!(turn % 2)) {
-        int krow = kPos / 10;
-        int kcol = kPos % 10;
-        //check for rook or queen's rook movement
-        for (int i = 1; kcol + i < 8; i++) {
-            if (board[krow][kcol + i] / 10 == 1) {
-                break;
-            }
-            if (board[krow][kcol + i] == b+R || board[krow][kcol + i] == b+Q) {
-               return true;
-                break;
-            }
-        }
-        for (int i = 1; kcol - i >= 0; i++) {
-            if (board[krow][kcol - i] / 10 == 1) {
-                break;
-            }
-            if (board[krow][kcol - i] == b+R|| board[krow][kcol - i] == b+Q) {
-                return  true;
-                break;
-            }
-        }
-
-        for (int i = 1; krow + i < 8; i++) {
-            if (board[krow + i][kcol] / 10 == 1) {
-                break;
-            }
-            if (board[krow + i][kcol] == b+R || board[krow + i][kcol] == b+Q) {
-                 return true;
-                break;
-            }
-        }
-        for (int i = 1; krow - i >= 0; i++) {
-            if (board[krow - i][kcol] / 10 == 1) {
-                break;
-            }
-            if (board[krow - i][kcol] == b+R || board[krow - i][kcol] == b+Q) {
-                return true;
-                break;
-            }
-        }
-        return false;
-    }*/
-    int king_color = board[king_pos / 10][king_pos % 10]/10;
+bool is_check(int king_pos,int turn) {
+    int king_color = turn+1;
+    //printf("KROL %d %d\n", king_color, king_pos);
     for (int row = 0; row < 8; row++) {
         for (int col = 0; col < 8; col++) {
             int code = board[row][col];
             if (code/10 && code/10 != king_color) {
                 piece p = code_to_piece[code / 10 - 1][code % 10 - 1];     
                 if (p.can_move(row, col, king_pos / 10, king_pos % 10)) {
-                    
+                    printf("%d ATTACKS KING %d\n", 10 * row + col,king_pos);
                     return true;
                 }
             }
@@ -245,7 +203,6 @@ bool check_after_move(int from_row,int from_col,int to_row,int to_col) {
     int temp3 = wkPos;
     int temp4 = bkPos;
 
-    int turn = temp1 / 10;
     int piece_code = temp1;
     piece p = code_to_piece[temp1 / 10 - 1][temp1 % 10 - 1];
     if (p.code == w + K) {
@@ -256,8 +213,8 @@ bool check_after_move(int from_row,int from_col,int to_row,int to_col) {
     }
     board[from_row][from_col] = 0;
     board[to_row][to_col] = temp1;
-    bool check = (turn % 2 - 1) ? is_check(bkPos, turn % 2, 1) : is_check(wkPos, turn % 2 + 1, 1);
-    //printf("CHECK AFTER %d MOVE %d\n",temp1, check);
+    bool check = (temp1/10==2) ? is_check(bkPos, temp1 / 10-1) : is_check(wkPos, temp1 / 10-1);
+    printf("SZACH PO RUCHU KOLOR %d ??? %d PRZED %d PO %d \n",temp1/10,check, 10 * from_row + from_col, 10 * to_row + to_col);
     board[from_row][from_col] = temp1;
     board[to_row][to_col] = temp2;
     wkPos = temp3;
@@ -265,21 +222,22 @@ bool check_after_move(int from_row,int from_col,int to_row,int to_col) {
     return check;
 }
 bool can_any_move(int color) {
+    color += 1;
     for (int from_row = 0; from_row < 8; from_row++) {
         for (int from_col = 0; from_col < 8; from_col++) {
             for (int to_row = 0; to_row < 8; to_row++) {
                 for (int to_col = 0; to_col < 8; to_col++) {
                     int code = board[from_row][from_col];
                     piece p = code_to_piece[code / 10 - 1][code % 10 - 1];
-                    if (code / 10 == color+1 && code % 10 == 6 && p.can_move(from_row, from_col, to_row, to_col)) {
+                    if (code / 10 == color && code % 10 == 6 && p.can_move(from_row, from_col, to_row, to_col)) {
                         if (!is_check(10 * to_row + to_col, color, 0)) {
                             //printf("KING CAN MOVE %d\n", 10 * to_row + to_col);
                             return true;
                         }
                     }
-                    if (code / 10 == color+1 && p.can_move(from_row, from_col, to_row, to_col)) {
+                    if (code / 10 == color && p.can_move(from_row, from_col, to_row, to_col)) {
                         if (check_after_move(from_row, from_col, to_row, to_col)) return false;
-                        //printf("SOMETHING CAN MOVE FROM %d TO %d\n", 10 * from_row + from_col, 10 * to_row + to_col);
+                        //printf("%d SOMETHING CAN MOVE FROM %d TO %d\n",color, 10 * from_row + from_col, 10 * to_row + to_col);
                         return true;
                     }
                 }
@@ -289,22 +247,22 @@ bool can_any_move(int color) {
     return false;
 }
 bool is_stalemate(int king_pos,int turn) {
-    if (is_check(king_pos, turn,0)) return false;
+    if (is_check(king_pos, turn)) return false;
     int king_code = board[king_pos / 10][king_pos % 10];
     piece king = code_to_piece[king_code / 10 - 1][king_code % 10 - 1];
     for (int i = -1; i <= 1; i++) {
         for (int j = -1; j <= 1; j++) {
             int temp = king_pos + 10 * i + j;
-            if (!(i==0 && j==0) && temp / 10 >= 0 && temp / 10 <= 70 && temp % 10 >= 0 && temp % 10 <= 7) {
+            if (!(i==0 && j==0) && temp / 10 >= 0 && temp / 10 <= 7 && temp % 10 >= 0 && temp % 10 <= 7) {
                 bool king_can_move = king.can_move(king_pos / 10, king_pos % 10, temp / 10, temp % 10);
-                bool check = is_check(temp, turn,0);
-                //printf("King %d temp %d %d %d\n", king_code, temp, check, king_can_move);
+                bool check = check_after_move(king_pos / 10, king_pos % 10, temp / 10, temp % 10);
+                //printf("King %d temp %d check %d  can move %d\n", king_code, temp, check, king_can_move);
                 if (!check && king_can_move) return false;
             }
                 
         }
     }
-    //printf("KING CANT MOVE\n");
+    //printf("KING %d CANT MOVE\n",king_code/10);
     return true;
 }
 int main() {
@@ -366,6 +324,7 @@ int main() {
     int game_state = 0; // 0 - paused, 1 - ongoing, 2 - finished
     bool stalemate = false;
     bool any_move = true;
+    int mate = 0;
     piece wP = *new_piece(w + P, al_load_bitmap("graphics/pawn_white.png"), pawn_move);
     piece bP = *new_piece(b + P, al_load_bitmap("graphics/pawn_black.png"), pawn_move);
     
@@ -546,15 +505,25 @@ int main() {
             int col = (pos_x - x_offset) / tile_size - 1;
 
             if (game_state == 1) {
-                stalemate = is_stalemate(bkPos, turn) || is_stalemate(wkPos, turn);
+                bool black_stalemate = is_stalemate(bkPos, turn);
+                bool white_stalemate = is_stalemate(wkPos, turn);
                 any_move = can_any_move(turn % 2);
-                if (stalemate && !any_move) game_state = 2;
-                stalemate &= (!any_move);
+                
+                stalemate = !any_move && (white_stalemate || black_stalemate);
+                if (turn % 2) {
+                    if (is_check(wkPos, turn % 2) && !any_move && stalemate) mate = 1;
+                }
+                else {
+                    if (is_check(bkPos, turn % 2) && !any_move && stalemate) mate = 2;
+                }
+                if (stalemate || mate) game_state = 2;
+                
             }
             if (game_state == 1) {
                 int temp = 0;
                     // check if first click on board
                 if (row >= 0 && row < 8 && col >= 0 && col < 8 && first_click && (board[row][col] == 0 || ((board[row][col] / 10) - 1) != turn % 2)) {
+                    printf("AAA\n");
                     first_click = false;
                     click_counter = 0;
                     from_row = -1;
@@ -562,6 +531,7 @@ int main() {
                 }
                 // check if second click on board
                 if ((first_click || second_click) && (row < 0 || row >= 8 || col < 0 || col >= 8)) {
+                    printf("BBB\n");
                     first_click = false;
                     second_click = false;
                     click_counter = 0;
@@ -572,6 +542,7 @@ int main() {
                 }
                 //set sourxe tile clicked on
                 if (first_click) {
+                    printf("OK1\n");
                     from_row = row;
                     from_col = col;
                     click_counter += 1;
@@ -579,37 +550,32 @@ int main() {
                 }
                 //set destination tile clicked on
                 if (second_click) {
+                    printf("OK2\n");
                     to_row = row;
                     to_col = col;
                     second_click = false;
                     click_counter = 0;
                 }
                 //check if legal move
-                bool check = (turn % 2) ? is_check(bkPos, turn % 2,0) : is_check(wkPos, turn % 2 + 1,0);
-                
-                
+                //printf("SPRAWDZ SZACHA\n");
+                bool check = (turn % 2) ? is_check(bkPos, turn % 2) : is_check(wkPos, turn % 2 + 1);
+                //printf("KROL %d JEST SZACHOWANY %d\n",turn%2+1,check);
+                //printf("RUCH %d SZACH %d PAT %d RUCH %d\n",turn%2,check, stalemate, any_move);
                 if (from_col != -1 && from_row != -1 && to_col != -1 && to_row != -1) {
+                    
                     bool flag = false;
                     piece p = code_to_piece[board[from_row][from_col] / 10 - 1][board[from_row][from_col] % 10 - 1]; // [piece color][piece type]
                     flag = p.can_move(from_row, from_col, to_row, to_col);
+                    printf("FLAGA %d KOLOR %d\n", flag,turn%2+1);
                     if (flag) { // is king  checked after curr move?
-                        int temp1 = board[from_row][from_col];
-                        int temp2 = board[to_row][to_col];
-                        int temp3 = wkPos;
-                        int temp4 = bkPos;
-                        if (p.code == w + K) {
-                            wkPos = to_row * 10 + to_col;
-                        }
-                        else if (p.code == b + K) {
-                            bkPos = to_row * 10 + to_col;
-                        }
-                        board[from_row][from_col] = 0;
-                        board[to_row][to_col] = temp1;
-                        check=(turn % 2) ? is_check(bkPos, turn % 2,1) : is_check(wkPos, turn % 2 + 1,1);
-                        board[from_row][from_col] = temp1;
-                        board[to_row][to_col] = temp2;
-                        wkPos = temp3;
-                        bkPos = temp4;
+                        bool still_check = check_after_move(from_row, from_col, to_row, to_col);
+                        printf("KROL JEST DALEJ SZACHOWANY %d\n",still_check);
+                        
+                        if (check && !still_check) check = false;
+                        else if (!check && still_check) check = true;
+                        else if (check && still_check) check = true;
+                        else check = false;
+                        
                     }
 
                     if (flag && !check) {
@@ -629,6 +595,7 @@ int main() {
                                 last_captured++;
                             }
                             board[to_row][to_col] = temp;
+                            printf("-----MADE MOVE------\n");
                         }
                         from_col = -1;
                         from_row = -1;
@@ -644,6 +611,7 @@ int main() {
                         click_counter = 0;
                     }
                 }
+                //printf("RUCH %d SZACH  %d PAT %d RUCH %d\n", turn % 2, check, stalemate, any_move);
             }
             //draw info
             char pos[4] = "Out";
@@ -666,6 +634,14 @@ int main() {
                 won[0] = '1';
                 won[1] = '/';
                 won[2] = '2';
+            }
+            if (mate == 1) {
+                won[0] = 'B';
+                won[1] = won[2] = ' ';
+            }
+            else if (mate == 2) {
+                won[0] = 'W';
+                won[1] = won[2] = ' ';
             }
             al_draw_textf(font, al_map_rgb(255, 255, 255), 0, 6 * tile_size / 2, 0, "Won?: %s", won);
             if (!(turn % 2)) {
