@@ -10,6 +10,7 @@
 #define b 20
 
 enum pieces { P = 1, N, B, R, Q, K };
+bool castling[6] = { false,false,false,false, false, false }; //0- wk 1- first wk rook 2- second white rook 3-bk 4-1st black rook 5-2nd black rook
 
 typedef struct piece {
     int code;// first digit  0-empty 1-white 2-black, second digit piece type
@@ -172,66 +173,18 @@ bool queen_move(int from_row, int from_col, int to_row, int to_col) {
     else return false;
     return true;
 }
-bool king_move(int from_row, int from_col, int to_row, int to_col) {
-    int delta_row = to_row - from_row;
-    int delta_col = to_col - from_col;
-    int color = board[from_row][from_col] / 10; // 0 - empty, 1 - white, 2 - black
-    int target_color = board[to_row][to_col] / 10;
-    if (delta_row == 0 && delta_col == 0 || color == target_color) return false;
-    return delta_row >= -1 && delta_row <= 1 && delta_col >= -1 && delta_col <= 1;
-}
-bool is_check(int king_pos,int turn,bool flag) {
-    /*if (!(turn % 2)) {
-        int krow = kPos / 10;
-        int kcol = kPos % 10;
-        //check for rook or queen's rook movement
-        for (int i = 1; kcol + i < 8; i++) {
-            if (board[krow][kcol + i] / 10 == 1) {
-                break;
-            }
-            if (board[krow][kcol + i] == b+R || board[krow][kcol + i] == b+Q) {
-               return true;
-                break;
-            }
-        }
-        for (int i = 1; kcol - i >= 0; i++) {
-            if (board[krow][kcol - i] / 10 == 1) {
-                break;
-            }
-            if (board[krow][kcol - i] == b+R|| board[krow][kcol - i] == b+Q) {
-                return  true;
-                break;
-            }
-        }
-
-        for (int i = 1; krow + i < 8; i++) {
-            if (board[krow + i][kcol] / 10 == 1) {
-                break;
-            }
-            if (board[krow + i][kcol] == b+R || board[krow + i][kcol] == b+Q) {
-                 return true;
-                break;
-            }
-        }
-        for (int i = 1; krow - i >= 0; i++) {
-            if (board[krow - i][kcol] / 10 == 1) {
-                break;
-            }
-            if (board[krow - i][kcol] == b+R || board[krow - i][kcol] == b+Q) {
-                return true;
-                break;
-            }
-        }
-        return false;
-    }*/
-    int king_color = board[king_pos / 10][king_pos % 10]/10;
+bool is_check(int king_pos, int turn, bool flag) {
+    int king_color =  board[king_pos / 10][king_pos % 10] / 10;
+    if (turn != 0) {
+        king_color = turn;
+    }
     for (int row = 0; row < 8; row++) {
         for (int col = 0; col < 8; col++) {
             int code = board[row][col];
-            if (code/10 && code/10 != king_color) {
-                piece p = code_to_piece[code / 10 - 1][code % 10 - 1];     
+            if (code / 10 && code / 10 != king_color) {
+                piece p = code_to_piece[code / 10 - 1][code % 10 - 1];
                 if (p.can_move(row, col, king_pos / 10, king_pos % 10)) {
-                    
+
                     return true;
                 }
             }
@@ -239,6 +192,75 @@ bool is_check(int king_pos,int turn,bool flag) {
     }
     return false;
 }
+bool king_move(int from_row, int from_col, int to_row, int to_col) {
+    int delta_row = to_row - from_row;
+    int delta_col = to_col - from_col;
+    int color = board[from_row][from_col] / 10; // 0 - empty, 1 - white, 2 - black
+    int target_color = board[to_row][to_col] / 10;
+    if (delta_row == 0 && delta_col == 0 || color == target_color) return false;
+    if (delta_col == -2) {
+        if (color == 1) {
+            if (castling[0] == false && castling[1]== false) {
+                for (int i = 0; i < 3; i++) {
+                    if (is_check(74 - i, 1,true)) {
+                        return false;
+                    }
+                    if (board[7][4 - i]&&i) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        } else {
+            if (castling[3] == false && castling[4] == false) {
+                for (int i = 0; i < 3; i++) {
+                    if (is_check(04 - i, 2,true)) {
+                        return false;
+                    }
+                    if (board[0][4-i]&&i) {
+                        return false;
+                    }
+                }
+                return true;
+
+            }
+        }
+    }
+    else if (delta_col == 2) {
+        if (color == 1) {
+            if (castling[0] == false && castling[2] == false) {
+                for (int i = 0; i < 3; i++) {
+                    if (is_check(74 + i, 1,true)) {
+                        return false;
+                    }
+                    if (board[7][4 + i]&&i) {
+                        return false;
+                    }
+                }
+                return true;
+
+            }
+        }
+        else {
+            if (castling[3] == false && castling[5] == false) {
+                for (int i = 0; i < 3; i++) {
+                    if (is_check(04 + i, 2,true)) {
+                        return false;
+                    }
+                    if (board[0][4+ i]&&i) {
+                        return false;
+                    }
+                }
+                return true;
+
+            }
+        }
+
+    }
+
+    return delta_row >= -1 && delta_row <= 1 && delta_col >= -1 && delta_col <= 1;
+}
+
 bool check_after_move(int from_row,int from_col,int to_row,int to_col) {
     int temp1 = board[from_row][from_col];
     int temp2 = board[to_row][to_col];
@@ -289,7 +311,7 @@ bool can_any_move(int color) {
     return false;
 }
 bool is_stalemate(int king_pos,int turn) {
-    if (is_check(king_pos, turn,0)) return false;
+    if (is_check(king_pos, turn%2,0)) return false;
     int king_code = board[king_pos / 10][king_pos % 10];
     piece king = code_to_piece[king_code / 10 - 1][king_code % 10 - 1];
     for (int i = -1; i <= 1; i++) {
@@ -297,7 +319,7 @@ bool is_stalemate(int king_pos,int turn) {
             int temp = king_pos + 10 * i + j;
             if (!(i==0 && j==0) && temp / 10 >= 0 && temp / 10 <= 70 && temp % 10 >= 0 && temp % 10 <= 7) {
                 bool king_can_move = king.can_move(king_pos / 10, king_pos % 10, temp / 10, temp % 10);
-                bool check = is_check(temp, turn,0);
+                bool check = is_check(temp, turn%2,0);
                 //printf("King %d temp %d %d %d\n", king_code, temp, check, king_can_move);
                 if (!check && king_can_move) return false;
             }
@@ -621,15 +643,65 @@ int main() {
                             bkPos = to_row * 10 + to_col;
                         }
                         piece p = code_to_piece[board[to_row][to_col] / 10 - 1][board[to_row][to_col] % 10 - 1];
-                        if (p.code % 10 != 6) {
+                   
                             temp = board[from_row][from_col];
+                  
+                            if (temp == wR.code) {
+                                if (to_col == 0) {
+                                    castling[1] = true;
+                                }
+                                else {
+                                    castling[2] = true;
+
+                                }
+
+                            }
+                            if (temp == bR.code) {
+                                if (to_col == 0) {
+                                    castling[1] = true;
+                                }
+                                else {
+                                    castling[2] = true;
+                                }
+                            }
+
                             board[from_row][from_col] = 0;
+                            if (temp == wK.code) {
+                                if (from_col - to_col == -2) {
+                                    board[from_row][from_col+1] = board[7][7];
+                                    board[7][7] = 0;
+                                    castling[1] == true;
+                                    castling[2] == true;
+                                }
+                                if (from_col - to_col == 2) {
+                                    board[from_row][from_col-1] = board[7][0];
+                                    board[7][0] = 0;;
+                                    castling[1] == true;
+                                    castling[2] == true;
+                                }
+                                castling[0] = true;
+                            }
+                            if (temp == bK.code) {
+                                if (from_col - to_col == -2) {
+                                    board[from_row][from_col+1] = board[0][7];
+                                    board[0][7] = 0;
+                                    castling[3] == true;
+                                    castling[4] == true;
+                                }
+                                if (from_col - to_col == 2) {
+                                    board[from_row][from_col-1] = board[0][0];
+                                    board[0][0] = 0;
+                                    castling[4] == true;
+                                    castling[3] == true;
+                                }
+                                castling[3] = true;
+                            }
                             if (board[to_row][to_col]) {
                                 captured[last_captured] = p;
                                 last_captured++;
                             }
                             board[to_row][to_col] = temp;
-                        }
+
                         from_col = -1;
                         from_row = -1;
                         to_row = -1;
